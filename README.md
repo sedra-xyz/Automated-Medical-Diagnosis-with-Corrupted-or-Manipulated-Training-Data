@@ -3,6 +3,10 @@
 
 # Medical Diagnosis Prediction with Data Poisoning Analysis
 
+## Interactive Project Showcase
+
+[View the Project Portfolio Website](https://sedra-xyz.github.io/Automated-Medical-Diagnosis-with-Corrupted-or-Manipulated-Training-Data/)
+
 This project focuses on building a machine learning pipeline for **medical diagnosis prediction** using the DDXPlus dataset, along with a comprehensive **data poisoning experiment** to evaluate model robustness under adversarial conditions.
 
 ---
