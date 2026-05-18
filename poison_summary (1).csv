@@ -1,0 +1,13 @@
+Model,Condition,Accuracy,F1,AUC
+Logistic Regression,Clean (0%),0.9971,0.9971,N/A
+Logistic Regression,Poisoned 10%,0.9964,0.9964,N/A
+Logistic Regression,Poisoned 20%,0.9949,0.9949,N/A
+Logistic Regression,Poisoned 30%,0.9943,0.9942,N/A
+Random Forest,Clean (0%),0.9883,0.9876,0.9999
+Random Forest,Poisoned 10%,0.9856,0.9845,0.9999
+Random Forest,Poisoned 20%,0.9889,0.9883,0.9999
+Random Forest,Poisoned 30%,0.9867,0.9859,0.9999
+XGBoost,Clean (0%),0.9971,0.9971,1.0000
+XGBoost,Poisoned 10%,0.9967,0.9966,1.0000
+XGBoost,Poisoned 20%,0.9966,0.9965,1.0000
+XGBoost,Poisoned 30%,0.9965,0.9965,1.0000

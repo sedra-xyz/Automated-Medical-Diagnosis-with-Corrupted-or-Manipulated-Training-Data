@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedPoise — Medical Diagnosis Under Adversarial Attack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0d12;
+  --surface: #111620;
+  --surface2: #181e2a;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --accent: #4fffb0;
+  --accent2: #ff6b6b;
+  --accent3: #6b9fff;
+  --gold: #f0c060;
+  --danger: #ff4f4f;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Instrument Sans', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 1.2rem 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,13,18,0.85);
+  backdrop-filter: blur(20px);
+}
+
+.nav-logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2.5rem;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--accent); }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  padding: 8rem 3rem 4rem;
+  gap: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(ellipse, rgba(79,255,176,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hero-label::before {
+  content: '';
+  display: block;
+  width: 2rem;
+  height: 1px;
+  background: var(--accent);
+}
+
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.8rem, 5vw, 4.5rem);
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero-desc {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  max-width: 44ch;
+  margin-bottom: 2.5rem;
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tag.green { border-color: rgba(79,255,176,0.3); color: var(--accent); }
+.tag.red { border-color: rgba(255,107,107,0.3); color: var(--accent2); }
+.tag.blue { border-color: rgba(107,159,255,0.3); color: var(--accent3); }
+
+.hero-ctas {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 0.85rem 1.8rem;
+  border-radius: 2px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  border: 1px solid var(--accent);
+}
+.btn-primary:hover { background: transparent; color: var(--accent); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+/* hero right: metrics panel */
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideIn 0.6s ease both;
+}
+
+.metric-card:nth-child(1) { animation-delay: 0.1s; }
+.metric-card:nth-child(2) { animation-delay: 0.2s; }
+.metric-card:nth-child(3) { animation-delay: 0.3s; }
+.metric-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.metric-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  color: var(--accent);
+}
+
+.metric-value.warn { color: var(--gold); }
+.metric-value.danger { color: var(--accent2); }
+.metric-value.info { color: var(--accent3); }
+
+/* ── SECTION BASE ── */
+section {
+  padding: 6rem 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-label::before {
+  content: '';
+  display: block;
+  width: 1.5rem;
+  height: 1px;
+  background: var(--accent);
+}
+
+h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  margin: 0 3rem;
+  max-width: calc(100% - 6rem);
+}
+
+/* ── OVERVIEW ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  margin-top: 3rem;
+}
+
+.overview-text p {
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  line-height: 1.8;
+}
+
+.overview-text strong { color: var(--text); }
+
+.feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.feature-list li::before {
+  content: '→';
+  color: var(--accent);
+  font-family: 'DM Mono', monospace;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* ── MODELS TABLE ── */
+.models-section { max-width: 1200px; }
+
+.table-wrap {
+  margin-top: 2.5rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+}
+
+thead {
+  background: var(--surface2);
+}
+
+thead th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+tbody tr:hover { background: var(--surface); }
+tbody tr:last-child { border-bottom: none; }
+
+tbody td {
+  padding: 0.875rem 1.25rem;
+  color: var(--text);
+}
+
+tbody td:first-child { color: var(--muted); }
+
+.best-row td { color: var(--accent) !important; }
+.best-row td:first-child { color: var(--accent) !important; font-weight: 600; }
+
+.bar-cell { position: relative; }
+.bar-bg {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: rgba(79,255,176,0.06);
+  border-radius: 0;
+  transition: width 1s ease;
+}
+.bar-text { position: relative; z-index: 1; }
+
+/* ── POISON EXPERIMENT ── */
+.poison-section {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 6rem 0;
+}
+
+.poison-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 3rem;
+}
+
+.poison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  margin-top: 3rem;
+}
+
+/* Chart canvas */
+.chart-container {
+  position: relative;
+  height: 320px;
+}
+
+canvas {
+  width: 100% !important;
+}
+
+.poison-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-top: 2rem;
+}
+
+/* ── FINDINGS ── */
+.findings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.finding-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.75rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.finding-card:hover {
+  border-color: rgba(79,255,176,0.3);
+  transform: translateY(-2px);
+}
+
+.finding-card.warn { border-top: 3px solid var(--gold); }
+.finding-card.danger { border-top: 3px solid var(--accent2); }
+.finding-card.good { border-top: 3px solid var(--accent); }
+.finding-card.info { border-top: 3px solid var(--accent3); }
+.finding-card.neutral { border-top: 3px solid var(--muted); }
+.finding-card.purple { border-top: 3px solid #b06fff; }
+
+.finding-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.finding-card h3 {
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+  color: var(--text);
+}
+
+.finding-card p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* ── TEAM ── */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.team-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2rem;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.team-card:hover { border-color: rgba(79,255,176,0.3); }
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+  color: var(--bg);
+}
+
+.team-card h3 {
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.team-card .role {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.team-card p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 1rem;
+}
+
+.team-card a {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  transition: opacity 0.2s;
+}
+.team-card a:hover { opacity: 0.7; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2.5rem 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+}
+
+footer .foot-left {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+footer .foot-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+footer .foot-links a {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+footer .foot-links a:hover { color: var(--accent); }
+
+/* ── INTERACTIVE POISON VIZ ── */
+.viz-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.viz-tab {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  padding: 0.6rem 1.2rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  border-right: 1px solid var(--border);
+}
+
+.viz-tab:last-child { border-right: none; }
+.viz-tab.active { background: var(--surface2); color: var(--accent); }
+
+/* Per-class bars */
+.per-class-viz {
+  margin-top: 2rem;
+}
+
+.class-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.class-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  width: 180px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.class-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.class-bar-fill {
+  height: 100%;
+  background: var(--accent2);
+  border-radius: 2px;
+  transition: width 1s ease;
+}
+
+.class-bar-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  width: 50px;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fadeUp 0.6s ease both;
+}
+
+.fade-up-1 { animation-delay: 0.1s; }
+.fade-up-2 { animation-delay: 0.2s; }
+.fade-up-3 { animation-delay: 0.3s; }
+.fade-up-4 { animation-delay: 0.4s; }
+
+/* ── PULSE DOT ── */
+.pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 0.4rem;
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding-top: 7rem; }
+  .overview-grid, .poison-grid { grid-template-columns: 1fr; }
+  .findings-grid { grid-template-columns: 1fr 1fr; }
+  .team-grid { grid-template-columns: 1fr; }
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { gap: 1.5rem; }
+  section { padding: 4rem 1.5rem; }
+  footer { flex-direction: column; gap: 1rem; }
+}
+
+@media (max-width: 600px) {
+  .findings-grid { grid-template-columns: 1fr; }
+  .hero { padding: 6rem 1.5rem 3rem; }
+  .hero h1 { font-size: 2.4rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span class="pulse-dot"></span>MedPoise · CS4082</div>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#experiment">Poisoning</a></li>
+    <li><a href="#findings">Findings</a></li>
+    <li><a href="#team">Team</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-left fade-up">
+    <div class="hero-label">Machine Learning · Topic 5: Data Poisoning</div>
+    <h1>Medical Diagnosis<br>Under <em>Adversarial</em><br>Attack</h1>
+    <p class="hero-desc">
+      We trained 8 classifiers on 1.3M synthetic patient records across 49 pathologies,
+      then systematically corrupted training labels to measure how healthcare AI degrades
+      under real-world adversarial threats.
+    </p>
+    <div class="hero-tags">
+      <span class="tag green">DDXPlus Dataset</span>
+      <span class="tag red">Label-Flipping Attack</span>
+      <span class="tag blue">49 Pathologies</span>
+      <span class="tag">1.3M Records</span>
+      <span class="tag">223 Features</span>
+    </div>
+    <div class="hero-ctas">
+      <a href="https://github.com/AhmadHakim119/ML_Project_DDXPLUS.git" target="_blank" class="btn btn-primary">↗ GitHub Repo</a>
+      <a href="https://colab.research.google.com/drive/1HmScJEnwN-uhLpYCbYDZl2cKvyan1r2O?usp=sharing" target="_blank" class="btn btn-secondary">Open in Colab</a>
+      <a href="report.pdf" target="_blank" class="btn btn-secondary">📄 Technical Report</a>
+      <a href="https://drive.google.com/drive/folders/1aiZmnT1zYPQUscss491OlCUT8WNlD17p?usp=sharing" target="_blank" class="btn btn-secondary">Dataset Drive</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Best Model Accuracy (Clean)</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">Logistic Regression</div>
+      </div>
+      <div class="metric-value">99.74%</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Models Evaluated</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">Full benchmark suite</div>
+      </div>
+      <div class="metric-value info">8</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">Max Poison Rate Tested</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">Label-flipping attack</div>
+      </div>
+      <div class="metric-value warn">30%</div>
+    </div>
+    <div class="metric-card">
+      <div>
+        <div class="metric-label">XGBoost F1 Drop @ 30%</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">Most robust model</div>
+      </div>
+      <div class="metric-value danger">0.0006</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="section-label">Project Overview</div>
+  <h2>What We Built &amp; Why It Matters</h2>
+  <div class="overview-grid">
+    <div class="overview-text">
+      <p>
+        ML systems in clinical settings are increasingly exposed to <strong>adversarial manipulation</strong>.
+        When training data comes from distributed or semi-trusted sources, a malicious actor may corrupt labels
+        before training—an attack known as <strong>data poisoning</strong>. A corrupted diagnostic model
+        may silently misclassify diseases in ways that are hard to detect post-deployment.
+      </p>
+      <p>
+        Using the <strong>DDXPlus benchmark</strong> (Mila Montréal), we trained a suite of supervised classifiers
+        on 1.3M synthetic patient records spanning 49 pathological conditions and 223 symptom features.
+        We then simulated adversarial label corruption at escalating poison rates to rigorously measure
+        performance degradation—with a focus on the <strong>rare disease problem</strong>.
+      </p>
+      <p>
+        Feature engineering transformed patient records into a <strong>Compressed Sparse Row matrix</strong>
+        with ~99.7% sparsity, reducing memory from ~220 GB dense to under 2 GB—enabling full-dataset
+        training on Google Colab.
+      </p>
+    </div>
+    <div>
+      <ul class="feature-list">
+        <li>Data preprocessing, one-hot encoding of 223-token symptom vocabulary</li>
+        <li>CSR sparse matrix for memory-efficient 1.3M sample training</li>
+        <li>8 classifiers benchmarked on accuracy, weighted F1, AUC, and 5-fold CV</li>
+        <li>Hyperparameter tuning via grid search on stratified subsamples</li>
+        <li>Class imbalance handled with <code>compute_sample_weight('balanced')</code></li>
+        <li>Soft-voting ensemble achieving F1 of 0.9973</li>
+        <li>Label-flipping poisoning at 10%, 20%, and 30% corruption rates</li>
+        <li>Per-class degradation analysis revealing the rare pathology vulnerability</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- MODELS -->
+<section id="models">
+  <div class="section-label">Baseline Results</div>
+  <h2>8 Classifiers, 1.3M Records</h2>
+  <p style="color:var(--muted);margin-top:0.5rem;max-width:65ch;">
+    All models trained on a clean dataset split. Top performers — Logistic Regression and XGBoost —
+    achieved near-perfect AUC across all 49 classes. Decision Tree and Complement NB trailed significantly.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Accuracy</th>
+          <th>Weighted F1</th>
+          <th>AUC (OvR)</th>
+          <th>5-Fold CV F1</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="best-row">
+          <td>Logistic Regression ★</td>
+          <td>0.9971</td>
+          <td>
+            <div class="bar-cell">
+              <div class="bar-bg" style="width:99.71%"></div>
+              <span class="bar-text">0.9971</span>
+            </div>
+          </td>
+          <td>1.0000</td>
+          <td>0.9975 ± 0.0002</td>
+          <td>Final model</td>
+        </tr>
+        <tr class="best-row" style="color:var(--accent3) !important;">
+          <td style="color:var(--accent3) !important;">XGBoost</td>
+          <td>0.9972</td>
+          <td>0.9972</td>
+          <td>1.0000</td>
+          <td>0.9965 ± 0.0004</td>
+          <td>Most robust</td>
+        </tr>
+        <tr>
+          <td>Random Forest</td>
+          <td>0.9969</td>
+          <td>0.9968</td>
+          <td>1.0000</td>
+          <td>0.9961 ± 0.0009</td>
+          <td>Top-3 selected</td>
+        </tr>
+        <tr>
+          <td>SGD Classifier</td>
+          <td>0.9954</td>
+          <td>0.9954</td>
+          <td>1.0000</td>
+          <td>0.9887 ± 0.0020</td>
+          <td>Online learning</td>
+        </tr>
+        <tr>
+          <td>SVM (LinearSVC)*</td>
+          <td>0.9971</td>
+          <td>0.9971</td>
+          <td>1.0000</td>
+          <td>N/A</td>
+          <td>200k subsample</td>
+        </tr>
+        <tr>
+          <td>KNN (100k subset)*</td>
+          <td>0.9858</td>
+          <td>0.9854</td>
+          <td>0.9990</td>
+          <td>0.9726 ± 0.0024</td>
+          <td>100k subsample</td>
+        </tr>
+        <tr>
+          <td>Complement NB</td>
+          <td>0.9316</td>
+          <td>0.9129</td>
+          <td>0.9994</td>
+          <td>0.9264 ± 0.0014</td>
+          <td>Sparse-compatible</td>
+        </tr>
+        <tr>
+          <td>Decision Tree</td>
+          <td>0.7306</td>
+          <td>0.7265</td>
+          <td>0.9851</td>
+          <td>0.7843 ± 0.0517</td>
+          <td>High variance</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);margin-top:0.75rem;">* Subsampled models — not directly comparable to full-data results.</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- POISON EXPERIMENT -->
+<div class="poison-section" id="experiment">
+  <div class="poison-inner">
+    <div class="section-label">Data Poisoning Experiment</div>
+    <h2>How Corruption Degrades Performance</h2>
+    <p style="color:var(--muted);margin-top:0.5rem;max-width:65ch;">
+      We simulated a malicious actor with write access to the training database, randomly flipping
+      labels at rates of 10%, 20%, and 30% (seed=42). Validation and test labels were never modified.
+    </p>
+
+    <div class="poison-grid">
+      <!-- Left: interactive chart -->
+      <div>
+        <div class="viz-tabs">
+          <button class="viz-tab active" onclick="switchTab('f1')">Weighted F1</button>
+          <button class="viz-tab" onclick="switchTab('acc')">Accuracy</button>
+          <button class="viz-tab" onclick="switchTab('drop')">F1 Drop</button>
+        </div>
+        <div class="chart-container">
+          <canvas id="poisonChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Right: per-class bars -->
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1.25rem;">Per-Class F1 Drop @ 30% Poisoning (LR)</div>
+        <div class="per-class-viz" id="perClassViz"></div>
+        <p style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);margin-top:1rem;">Bronchiolitis and Acute Rhinosinusitis bear disproportionate harm — rare classes with tight decision boundaries.</p>
+      </div>
+    </div>
+
+    <!-- Poison results table -->
+    <div class="poison-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Clean (0%)</th>
+            <th>Poisoned 10%</th>
+            <th>Poisoned 20%</th>
+            <th>Poisoned 30%</th>
+            <th>F1 Drop</th>
+            <th>AUC @30%</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Logistic Regression</td>
+            <td>0.9971</td>
+            <td>0.9964</td>
+            <td>0.9949</td>
+            <td>0.9942</td>
+            <td style="color:var(--gold)">0.0029</td>
+            <td style="color:var(--muted)">N/A</td>
+          </tr>
+          <tr>
+            <td>Random Forest†</td>
+            <td>0.9876</td>
+            <td>0.9845</td>
+            <td>0.9883</td>
+            <td>0.9859</td>
+            <td style="color:var(--accent)">0.0017</td>
+            <td>0.99987</td>
+          </tr>
+          <tr>
+            <td>XGBoost</td>
+            <td>0.9971</td>
+            <td>0.9966</td>
+            <td>0.9965</td>
+            <td>0.9965</td>
+            <td style="color:var(--accent)">0.0006 ★</td>
+            <td>0.99997</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);margin-top:0.75rem;">†RF uses a lightweight configuration (n_estimators=50, max_depth=15); metrics carry additional variance.</p>
+  </div>
+</div>
+
+<!-- KEY FINDINGS -->
+<section id="findings">
+  <div class="section-label">Analysis &amp; Findings</div>
+  <h2>What the Data Revealed</h2>
+  <div class="findings-grid">
+    <div class="finding-card good">
+      <div class="finding-icon">🏆</div>
+      <h3>Logistic Regression Wins</h3>
+      <p>Achieved 99.74% weighted F1 on clean test data. Its convex loss surface and strong L2 regularization make it both the top performer and the most poison-robust model overall.</p>
+    </div>
+    <div class="finding-card info">
+      <div class="finding-icon">🛡️</div>
+      <h3>XGBoost: Smallest Absolute Drop</h3>
+      <p>Only 0.0006 F1 drop at 30% poisoning. Boosting ensembles can partially self-correct for noisy labels during training — a significant advantage in adversarial conditions.</p>
+    </div>
+    <div class="finding-card danger">
+      <div class="finding-icon">⚠️</div>
+      <h3>Rare Diseases Vanish</h3>
+      <p>Bronchiolitis (261 training samples) shows ~0.10 F1 drop at 30% poisoning. Rare pathologies effectively disappear from the model's hypothesis space — the exact conditions needing diagnostic support most.</p>
+    </div>
+    <div class="finding-card warn">
+      <div class="finding-icon">📉</div>
+      <h3>Uniform Poisoning Underestimates Risk</h3>
+      <p>Random label flipping is the simplest attack. Real adversaries would use targeted flipping (rare → common) to maximize diagnostic confusion while evading detection. Our results are a lower bound.</p>
+    </div>
+    <div class="finding-card neutral">
+      <div class="finding-icon">💾</div>
+      <h3>CSR Sparsity Enables Scale</h3>
+      <p>One-hot encoding 223 symptoms produced ~99.7% sparse matrices. CSR format cut memory from 220 GB dense to under 2 GB — making full 1.3M training feasible on Google Colab.</p>
+    </div>
+    <div class="finding-card purple">
+      <div class="finding-icon">🔬</div>
+      <h3>No Defense Implemented</h3>
+      <p>This study exclusively measured attack impact. Defenses like Cleanlab confident learning, label smoothing, and loss reweighting remain unimplemented — a gap for future work.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="section-label">Contributors</div>
+  <h2>The Team</h2>
+  <p style="color:var(--muted);margin-top:0.5rem;">Developed for CS4082 Machine Learning at Effat University.</p>
+  <div class="team-grid">
+    <div class="team-card">
+      <div class="avatar">AH</div>
+      <h3>Ahmad Hakim</h3>
+      <div class="role">ML Lead</div>
+      <p>Led literature review, adversarial threat analysis, and model training. Coordinated the experimental framework and data poisoning pipeline.</p>
+      <a href="https://ahmadhakim119.github.io/portfolio/" target="_blank">↗ Portfolio</a>
+    </div>
+    <div class="team-card">
+      <div class="avatar" style="background:linear-gradient(135deg,var(--accent2),var(--gold));">SM</div>
+      <h3>Sedra Massalha</h3>
+      <div class="role">Research Lead</div>
+      <p>Led overall report writing and model evaluation. Contributed to code implementation, result analysis, and the written academic paper.</p>
+      <a href="https://github.com/sedra-xyz" target="_blank">↗ GitHub</a>
+    </div>
+    <div class="team-card">
+      <div class="avatar" style="background:linear-gradient(135deg,var(--accent3),#b06fff);">DA</div>
+      <h3>Danya Alshurafa</h3>
+      <div class="role">Data Engineer</div>
+      <p>Handled all preprocessing and exploratory data analysis. Created the project presentation and contributed to the experimental design.</p>
+      <a href="https://github.com/dealshurafa2" target="_blank">↗ GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-left">© 2025 MedPoise · CS4082 Machine Learning · Effat University</div>
+  <ul class="foot-links">
+    <li><a href="https://github.com/AhmadHakim119/ML_Project_DDXPLUS.git" target="_blank">GitHub</a></li>
+    <li><a href="https://colab.research.google.com/drive/1HmScJEnwN-uhLpYCbYDZl2cKvyan1r2O?usp=sharing" target="_blank">Colab</a></li>
+    <li><a href="report.pdf" target="_blank">Report PDF</a></li>
+    <li><a href="https://drive.google.com/drive/folders/1aiZmnT1zYPQUscss491OlCUT8WNlD17p?usp=sharing" target="_blank">Dataset</a></li>
+  </ul>
+</footer>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── DATA ──
+const poisonData = {
+  f1: {
+    labels: ['0%', '10%', '20%', '30%'],
+    datasets: [
+      { label: 'Logistic Regression', data: [0.9971, 0.9964, 0.9949, 0.9942], borderColor: '#4fffb0', backgroundColor: 'rgba(79,255,176,0.08)', tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+      { label: 'Random Forest', data: [0.9876, 0.9845, 0.9883, 0.9859], borderColor: '#f0c060', backgroundColor: 'rgba(240,192,96,0.08)', tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+      { label: 'XGBoost', data: [0.9971, 0.9966, 0.9965, 0.9965], borderColor: '#6b9fff', backgroundColor: 'rgba(107,159,255,0.08)', tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+    ]
+  },
+  acc: {
+    labels: ['0%', '10%', '20%', '30%'],
+    datasets: [
+      { label: 'Logistic Regression', data: [0.9971, 0.9964, 0.9949, 0.9942], borderColor: '#4fffb0', backgroundColor: 'rgba(79,255,176,0.08)', tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+      { label: 'Random Forest', data: [0.9876, 0.9845, 0.9883, 0.9859], borderColor: '#f0c060', backgroundColor: 'rgba(240,192,96,0.08)', tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+      { label: 'XGBoost', data: [0.9972, 0.9966, 0.9965, 0.9965], borderColor: '#6b9fff', backgroundColor: 'rgba(107,159,255,0.08)', tension: 0.3, pointRadius: 5, pointHoverRadius: 7 },
+    ]
+  },
+  drop: {
+    labels: ['Logistic Regression', 'Random Forest', 'XGBoost'],
+    datasets: [{
+      label: 'F1 Drop @ 30%',
+      data: [0.0029, 0.0017, 0.0006],
+      backgroundColor: ['rgba(79,255,176,0.7)', 'rgba(240,192,96,0.7)', 'rgba(107,159,255,0.7)'],
+      borderColor: ['#4fffb0', '#f0c060', '#6b9fff'],
+      borderWidth: 1,
+      borderRadius: 2,
+    }]
+  }
+};
+
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      labels: {
+        color: '#6b7280',
+        font: { family: 'DM Mono', size: 10 },
+        boxWidth: 16,
+        padding: 16,
+      }
+    },
+    tooltip: {
+      backgroundColor: '#111620',
+      borderColor: 'rgba(255,255,255,0.07)',
+      borderWidth: 1,
+      titleColor: '#e8eaf0',
+      bodyColor: '#6b7280',
+      titleFont: { family: 'DM Mono' },
+      bodyFont: { family: 'DM Mono', size: 11 },
+    }
+  },
+  scales: {
+    x: { ticks: { color: '#6b7280', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+    y: { ticks: { color: '#6b7280', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+  }
+};
+
+let currentTab = 'f1';
+let chart;
+
+function buildChart(tab) {
+  const ctx = document.getElementById('poisonChart').getContext('2d');
+  if (chart) chart.destroy();
+  const d = poisonData[tab];
+  const isBar = tab === 'drop';
+  chart = new Chart(ctx, {
+    type: isBar ? 'bar' : 'line',
+    data: d,
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { ...chartDefaults.scales.x },
+        y: {
+          ...chartDefaults.scales.y,
+          min: isBar ? 0 : 0.984,
+          ticks: { ...chartDefaults.scales.y.ticks, callback: v => isBar ? v.toFixed(4) : v.toFixed(4) }
+        }
+      }
+    }
+  });
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.viz-tab').forEach((el, i) => {
+    el.classList.toggle('active', ['f1','acc','drop'][i] === tab);
+  });
+  buildChart(tab);
+}
+
+buildChart('f1');
+
+// ── PER CLASS BARS ──
+const perClassData = [
+  { name: 'Bronchiolitis', drop: 0.102 },
+  { name: 'Acute Rhinosinusitis', drop: 0.051 },
+  { name: 'Unstable Angina', drop: 0.032 },
+  { name: 'Chronic Cough', drop: 0.021 },
+  { name: 'Acute Laryngitis', drop: 0.018 },
+  { name: 'Laryngospasm', drop: 0.014 },
+  { name: 'Whooping Cough', drop: 0.009 },
+  { name: 'SLE', drop: 0.005 },
+  { name: 'URTI', drop: 0.001 },
+  { name: 'Influenza', drop: 0.001 },
+];
+
+const maxDrop = Math.max(...perClassData.map(d => d.drop));
+const viz = document.getElementById('perClassViz');
+perClassData.forEach(item => {
+  const pct = (item.drop / maxDrop * 100).toFixed(1);
+  const color = item.drop > 0.05 ? '#ff6b6b' : item.drop > 0.02 ? '#f0c060' : '#6b7280';
+  viz.innerHTML += `
+    <div class="class-bar-row">
+      <div class="class-name">${item.name}</div>
+      <div class="class-bar-track">
+        <div class="class-bar-fill" style="width:${pct}%;background:${color};"></div>
+      </div>
+      <div class="class-bar-val" style="color:${color};">${item.drop.toFixed(3)}</div>
+    </div>`;
+});
+</script>
+</body>
+</html>
